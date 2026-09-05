@@ -1,16 +1,29 @@
+import { useState, useEffect } from 'react'
 import { Card, CardBody, Badge, Button } from '../../components/ui'
-import { MOCK_PROGRAMS } from '../../features/learning-programs/data/programs'
+import { api } from '../../lib/api'
 import { useSkillProfileStore } from '../../store/skillProfileStore'
+import type { LearningProgram } from '../../types/domain'
 
 export function LearningProgramsPage() {
   const profile = useSkillProfileStore((s) => s.profile)
   const gapSet = new Set(profile?.gaps ?? [])
+  const [programs, setPrograms] = useState<LearningProgram[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const sorted = [...MOCK_PROGRAMS].sort((a, b) => {
+  useEffect(() => {
+    api.fetchLearningPrograms().then(data => {
+      setPrograms(data)
+      setLoading(false)
+    })
+  }, [])
+
+  const sorted = [...programs].sort((a, b) => {
     const aGap = a.skillsCovered.some((s) => gapSet.has(s)) ? 1 : 0
     const bGap = b.skillsCovered.some((s) => gapSet.has(s)) ? 1 : 0
     return bGap - aGap
   })
+
+  if (loading) return <div className="p-8 text-ink-faint">Loading programs...</div>
 
   return (
     <div>

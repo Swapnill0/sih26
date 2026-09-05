@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardHeader, CardBody, Badge, Button, Label, Input, Select, Textarea } from '../../components/ui'
-import { MOCK_INTERNSHIPS } from '../../features/internships/data/internships'
-import { MOCK_JOBS } from '../../features/placements/data/jobs'
+import { api } from '../../lib/api'
+import type { Internship, JobOpening } from '../../types/domain'
 
 interface DraftPosting {
   title: string
@@ -12,6 +12,16 @@ interface DraftPosting {
 export function PostingsPage() {
   const [drafts, setDrafts] = useState<DraftPosting[]>([])
   const [form, setForm] = useState<DraftPosting>({ title: '', skills: '', type: 'Internship' })
+  const [postings, setPostings] = useState<(Internship | JobOpening)[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([api.fetchInternships(), api.fetchJobs()]).then(([internshipsData, jobsData]) => {
+      // Interleave or just concat
+      setPostings([...internshipsData, ...jobsData])
+      setLoading(false)
+    })
+  }, [])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -36,21 +46,25 @@ export function PostingsPage() {
               <p className="mt-1 text-sm text-ink-faint">{d.type} · Just added</p>
             </div>
           ))}
-          {[...MOCK_INTERNSHIPS, ...MOCK_JOBS].map((p) => (
-            <div key={p.id} className="flex items-center justify-between px-5 py-4">
-              <div>
-                <p className="font-medium text-ink">{p.title}</p>
-                <p className="text-sm text-ink-faint">
-                  {'durationWeeks' in p ? `Internship · ${p.durationWeeks} weeks` : 'Full-time'} · {p.applicants} applicants
-                </p>
+          {loading ? (
+            <div className="p-5 text-ink-faint">Loading postings...</div>
+          ) : (
+            postings.map((p) => (
+              <div key={p.id} className="flex items-center justify-between px-5 py-4">
+                <div>
+                  <p className="font-medium text-ink">{p.title}</p>
+                  <p className="text-sm text-ink-faint">
+                    {'durationWeeks' in p ? `Internship · ${p.durationWeeks} weeks` : 'Full-time'} · {p.applicants} applicants
+                  </p>
+                </div>
+                <div className="flex flex-wrap justify-end gap-1.5">
+                  {p.requiredSkills.slice(0, 2).map((s) => (
+                    <Badge key={s}>{s}</Badge>
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-wrap justify-end gap-1.5">
-                {p.requiredSkills.slice(0, 2).map((s) => (
-                  <Badge key={s}>{s}</Badge>
-                ))}
-              </div>
-            </div>
-          ))}
+            ))
+          )}
         </CardBody>
       </Card>
 

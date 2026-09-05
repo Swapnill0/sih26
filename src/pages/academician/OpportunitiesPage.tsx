@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardBody, Badge, Button } from '../../components/ui'
-import { MOCK_ACADEMIC_OPPORTUNITIES } from '../../features/dashboard/academician/opportunities'
+import { api } from '../../lib/api'
 import type { AcademicOpportunity } from '../../types/domain'
 import { cn } from '../../lib/cn'
 
@@ -15,9 +15,20 @@ const TYPES: (AcademicOpportunity['type'] | 'All')[] = [
 export function OpportunitiesPage() {
   const [filter, setFilter] = useState<(typeof TYPES)[number]>('All')
   const [expressed, setExpressed] = useState<Set<string>>(new Set())
+  const [rawOpportunities, setRawOpportunities] = useState<AcademicOpportunity[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.fetchAcademicOpportunities().then(data => {
+      setRawOpportunities(data)
+      setLoading(false)
+    })
+  }, [])
 
   const opportunities =
-    filter === 'All' ? MOCK_ACADEMIC_OPPORTUNITIES : MOCK_ACADEMIC_OPPORTUNITIES.filter((o) => o.type === filter)
+    filter === 'All' ? rawOpportunities : rawOpportunities.filter((o) => o.type === filter)
+
+  if (loading) return <div className="p-8 text-ink-faint">Loading opportunities...</div>
 
   return (
     <div>

@@ -1,18 +1,43 @@
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ClipboardList, Briefcase, FolderGit2, ArrowRight } from 'lucide-react'
 import { StatCard, Card, CardHeader, CardBody, Badge, Button } from '../../components/ui'
 import { useSkillProfileStore } from '../../store/skillProfileStore'
-import { MOCK_INTERNSHIPS, computeMatchScore } from '../../features/internships/data/internships'
-import { MOCK_PORTFOLIO } from '../../features/portfolio/data/portfolio'
+import { useAuthStore } from '../../store/authStore'
+import { api, computeMatchScore } from '../../lib/api'
+import type { Internship, PortfolioItem } from '../../types/domain'
 
 export function StudentOverviewPage() {
+  const user = useAuthStore((s) => s.user)
   const profile = useSkillProfileStore((s) => s.profile)
+  const [internships, setInternships] = useState<Internship[]>([])
+  const [portfolio, setPortfolio] = useState<PortfolioItem[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [internshipsData, portfolioData] = await Promise.all([
+          api.fetchInternships(),
+          user?.id ? api.fetchPortfolio(user.id) : Promise.resolve([])
+        ])
+        setInternships(internshipsData)
+        setPortfolio(portfolioData)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadData()
+  }, [user?.id])
+
   const strong = profile?.scores.filter((s) => s.score >= 65).map((s) => s.skill) ?? []
 
-  const recommended = [...MOCK_INTERNSHIPS]
+  const recommended = [...internships]
     .map((i) => ({ ...i, matchScore: computeMatchScore(i.requiredSkills, strong) }))
     .sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0))
     .slice(0, 3)
+
+  if (loading) return <div className="p-8 text-ink-faint">Loading overview...</div>
 
   return (
     <div className="space-y-8">
@@ -24,8 +49,8 @@ export function StudentOverviewPage() {
           icon={ClipboardList}
           tone="teal"
         />
-        <StatCard label="Open matches" value={String(MOCK_INTERNSHIPS.length)} hint="Internships posted this week" icon={Briefcase} tone="gold" />
-        <StatCard label="Portfolio items" value={String(MOCK_PORTFOLIO.length)} hint={`${MOCK_PORTFOLIO.filter((p) => p.verified).length} verified`} icon={FolderGit2} />
+        <StatCard label="Open matches" value={String(internships.length)} hint="Internships posted this week" icon={Briefcase} tone="gold" />
+        <StatCard label="Portfolio items" value={String(portfolio.length)} hint={`${portfolio.filter((p) => p.verified).length} verified`} icon={FolderGit2} />
       </div>
 
       {!profile && (

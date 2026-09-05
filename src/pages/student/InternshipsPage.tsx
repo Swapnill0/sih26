@@ -1,21 +1,53 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Card, CardBody, Badge, Button } from '../../components/ui'
-import { MOCK_INTERNSHIPS, computeMatchScore } from '../../features/internships/data/internships'
+import { api, computeMatchScore } from '../../lib/api'
+import { useAuthStore } from '../../store/authStore'
 import { useSkillProfileStore } from '../../store/skillProfileStore'
+import type { Internship } from '../../types/domain'
 import { cn } from '../../lib/cn'
 
 export function InternshipsPage() {
+  const user = useAuthStore((s) => s.user)
   const profile = useSkillProfileStore((s) => s.profile)
   const [applied, setApplied] = useState<Set<string>>(new Set())
   const [modeFilter, setModeFilter] = useState<'All' | 'Remote' | 'Hybrid' | 'On-site'>('All')
+  const [rawInternships, setRawInternships] = useState<Internship[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.fetchInternships().then(data => {
+      setRawInternships(data)
+      setLoading(false)
+    })
+  }, [])
 
   const strong = profile?.scores.filter((s) => s.score >= 65).map((s) => s.skill) ?? []
 
   const internships = useMemo(() => {
-    const withScores = MOCK_INTERNSHIPS.map((i) => ({ ...i, matchScore: computeMatchScore(i.requiredSkills, strong) }))
+    const withScores = rawInternships.map((i) => ({ ...i, matchScore: computeMatchScore(i.requiredSkills, strong) }))
     const filtered = modeFilter === 'All' ? withScores : withScores.filter((i) => i.mode === modeFilter)
     return filtered.sort((a, b) => (b.matchScore ?? 0) - (a.matchScore ?? 0))
-  }, [modeFilter, strong])
+  }, [rawInternships, modeFilter, strong])
+
+  const handleApply = async (internshipId: string) => {
+    if (!user) return
+    setApplied((prev) => new Set(prev).add(internshipId))
+    try {
+      await api.applyToInternship(internshipId, user.id)
+    } catch (e) {
+      console.error('Failed to apply', e)
+      // Revert optimism if failed
+      setApplied((prev) => {
+        const next = new Set(prev)
+        next.delete(internshipId)
+        return next
+      })
+    }
+  }
+
+  if (loading) {
+    return <div className="p-8 text-center text-ink-faint">Loading internships...</div>
+  }
 
   return (
     <div>
@@ -58,7 +90,7 @@ export function InternshipsPage() {
                   variant={isApplied ? 'secondary' : 'primary'}
                   size="sm"
                   className="shrink-0"
-                  onClick={() => setApplied((prev) => new Set(prev).add(i.id))}
+                  onClick={() => handleApply(i.id)}
                   disabled={isApplied}
                 >
                   {isApplied ? 'Applied' : 'Apply'}
