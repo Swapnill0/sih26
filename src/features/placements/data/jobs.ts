@@ -1,0 +1,40 @@
+import type { JobOpening } from '../../../types/domain'
+
+export const MOCK_JOBS: JobOpening[] = [
+  {
+    id: 'job-1',
+    title: 'Graduate Software Engineer',
+    company: 'Northwind Analytics',
+    location: 'Bengaluru',
+    type: 'Full-time',
+    ctcRange: '₹9–12 LPA',
+    requiredSkills: ['Data Structures & Algorithms', 'Frontend Development'],
+    minEligibility: 'B.Tech, CGPA ≥ 7.0',
+    postedOn: '2026-08-15',
+    applicants: 212,
+  },
+  {
+    id: 'job-2',
+    title: 'Junior Data Analyst',
+    company: 'Fieldstone Retail',
+    location: 'Remote',
+    type: 'Full-time',
+    ctcRange: '₹6–8 LPA',
+    requiredSkills: ['SQL & Databases', 'Communication'],
+    minEligibility: 'Any discipline, CGPA ≥ 6.5',
+    postedOn: '2026-08-20',
+    applicants: 158,
+  },
+  {
+    id: 'job-3',
+    title: 'Cloud Support Engineer (Intern-to-hire)',
+    company: 'Harbor & Cole Systems',
+    location: 'Pune',
+    type: 'Internship-to-hire',
+    ctcRange: '₹7–9 LPA on conversion',
+    requiredSkills: ['Cloud Fundamentals', 'Problem Solving'],
+    minEligibility: 'B.Tech/M.Tech, CGPA ≥ 7.0',
+    postedOn: '2026-08-24',
+    applicants: 96,
+  },
+]
